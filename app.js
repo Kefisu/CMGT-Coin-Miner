@@ -1,24 +1,65 @@
+const figlet = require('figlet');
+const chalk = require('chalk');
+const spinner = require('cli-spinner').Spinner;
+
 const axios = require('axios');
 const crypto = require('crypto');
 
-let lastBlock = axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next')
-    .then(res => {
-        let string = hash(createLastBlockString(res.data));
-        let newString = createNewBlockString(string, res.data);
+const inquirer = require('./modules/inquirer');
+const helpers = require('./modules/helpers');
+const hash = require('./modules/hash.js');
 
-        console.log(hash("text"))
+let fetchSpinner = new spinner('%s Blok ophalen');
+let workingSpinner = new spinner('%s Bezig met minen');
+let sessionBlocksMined = 0;
 
-        doHash(newString)
+const start = async () => {
+    console.clear();
+    console.log(
+        chalk.red(
+            figlet.textSync('CMGT Coin Miner v1.0', {
+                horizontalLayout: 'full'
+            })
+        )
+    );
 
-        // console.log(hash("text"));
-        // console.log(res.data);
-    })
-    .catch(err => console.error(err));
+    // await countMyRecords();
 
-function hash(string) {
+    const command = await inquirer.askToStartMiner();
+
+    if (command.start) {
+        console.log(chalk.green('Starting CMGT Coin Miner'));
+        mine();
+    }
+}
+
+function mine() {
+    fetchSpinner.start();
+
+    axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next')
+        .then(res => {
+
+            fetchSpinner.stop(true);
+
+            if (res.data.open) {
+                workingSpinner.start();
+
+                let string = hashFunc(hash.createLastBlockString(res.data));
+                let newString = hash.createNewBlockString(string, res.data);
+
+                doHash(newString)
+            } else {
+                console.log(chalk.yellow(`Block locked. Going idle for ${res.data.countdown}ms`));
+                setTimeout(() => mine(), res.data.countdown)
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+function hashFunc(string) {
 
     // Replace spaces
-    let arr = stringToArray(replaceWhitespaces(string));
+    let arr = helpers.stringToArray(helpers.replaceWhitespaces(string));
 
     // Convert string to chars in array
     // let arr = s.split("");
@@ -54,18 +95,7 @@ function hash(string) {
         multipleArrays.push(splitAscii.slice(i, i + 10))
     }
 
-    // Add all array vars to one array
-    let finalArray = [];
-    let length = multipleArrays.length;
-    for (let i = 0; i < 10; i++) {
-        let num = 0;
-
-        for (let arr of multipleArrays) {
-            num += arr[i];
-        }
-
-        finalArray.push(num % 10);
-    }
+    let finalArray = mod10(multipleArrays, ...multipleArrays.splice(0, 1));
 
     // Create string && hash that string
     const nonHashString = finalArray.toString().replace(/,/g, '');
@@ -74,36 +104,72 @@ function hash(string) {
 
 function doHash(string) {
     let nonce = 0;
-    let hashed = hash(string + nonce);
+    let hashed = hashFunc(string + nonce);
 
     while (hashed.substr(0, 4) !== '0000') {
         nonce++
-        hashed = hash(string + nonce);
+        hashed = hashFunc(string + nonce);
     }
-    console.log(nonce);
-    console.log(hashed);
     axios.post('https://programmeren9.cmgt.hr.nl:8000/api/blockchain', {
         nonce: nonce,
-        user: 'Kevin'
-    }).then(res => console.log(res.data))
+        user: '0944552'
+    }).then(res => {
+        workingSpinner.stop(true);
+        if (res.data.message === 'blockchain accepted, user awarded') {
+            console.log('Acccepted hash: ', hashed);
+            console.log('Status: ', res.data.message);
+            console.log('Accepted nonce', nonce);
+
+            goIdle();
+        } else if (res.data.message = 'nonce not correct') {
+            console.log(chalk.red(res.data.message))
+            goIdle();
+        } else {
+            console.log(chalk.red(res.data.message))
+            mine()
+        }
+    })
 }
 
-function replaceWhitespaces(string) {
-    return string.replace(/\s/g, '');
+function goIdle() {
+    axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next').then(res => {
+        console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
+        setTimeout(() => mine(), res.data.countdown)
+    })
 }
 
-function stringToArray(string) {
-    return string.split("");
+function mod10(collection, summary) {
+    if (collection.length === 0) {
+        return summary
+    }
+    return mod10(collection, addition(summary, ...collection.splice(0, 1)))
 }
 
-function createLastBlockString(obj) {
-    let s = obj.blockchain.hash + obj.blockchain.data[0].from + obj.blockchain.data[0].to + obj.blockchain.data[0].amount + obj.blockchain.data[0].timestamp + obj.blockchain.timestamp + obj.blockchain.nonce;
-    console.log(s)
-    return s;
+function addition(arr1, arr2) {
+    let arr = [];
+
+    for (let i = 0; i < 10; i++) {
+        arr.push((arr1[i] + arr2[i]) % 10)
+    }
+    return arr;
 }
 
-function createNewBlockString(string, obj) {
-    let s = string + obj.transactions[0].from + obj.transactions[0].to + obj.transactions[0].amount + obj.transactions[0].timestamp + obj.timestamp
-    console.log(s)
-    return s;
+function countMyRecords() {
+    let recordCount = 0;
+
+    axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain').then(res => {
+        for (let item of res.data) {
+            for (let transaction of item.data) {
+
+                if (transaction.to === '0944552') {
+                    recordCount++
+                }
+            }
+        }
+        console.log(chalk.green(`U heeft ${recordCount} CMGT Coins op uw naam staan.`))
+    })
+
 }
+
+start();
+
