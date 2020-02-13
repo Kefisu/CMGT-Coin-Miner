@@ -17,7 +17,7 @@ const start = async () => {
     console.clear();
     console.log(
         chalk.red(
-            figlet.textSync('CMGT Coin Miner v1.0', {
+            figlet.textSync('CMGT Coin Miner v0.1', {
                 horizontalLayout: 'full'
             })
         )
@@ -166,10 +166,12 @@ function countMyRecords() {
                 }
             }
         }
-        console.log(chalk.green(`U heeft ${recordCount} CMGT Coins op uw naam staan.`))
+        console.log(chalk.cyan(`You have ${recordCount} CMGT Coins.`))
     })
 
 }
 
-start();
+// start();
 
+
+countMyRecords();
