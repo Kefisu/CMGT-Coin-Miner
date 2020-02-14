@@ -9,6 +9,8 @@ const inquirer = require('./modules/inquirer');
 const helpers = require('./modules/helpers');
 const hash = require('./modules/hash.js');
 
+const mod10hash = require('./modules/helpers/mod10hash');
+
 let fetchSpinner = new spinner('%s Blok ophalen');
 let workingSpinner = new spinner('%s Bezig met minen');
 let sessionBlocksMined = 0;
@@ -22,8 +24,6 @@ const start = async () => {
             })
         )
     );
-
-    // await countMyRecords();
 
     const command = await inquirer.askToStartMiner();
 
@@ -47,6 +47,7 @@ function mine() {
                 let string = hashFunc(hash.createLastBlockString(res.data));
                 let newString = hash.createNewBlockString(string, res.data);
 
+                // doHash('00005d430ce77ad654b5309a770350bfb4cf49171c682330a2eccc98fd8853cfCMGT Mining CorporationBas BOOTB115487477332611548748101396')
                 doHash(newString)
             } else {
                 console.log(chalk.yellow(`Block locked. Going idle for ${res.data.countdown}ms`));
@@ -61,41 +62,29 @@ function hashFunc(string) {
     // Replace spaces
     let arr = helpers.stringToArray(helpers.replaceWhitespaces(string));
 
-    // Convert string to chars in array
-    // let arr = s.split("");
-
-    // Convert chars to ascii
-    let ascii = [];
-    for (let char of arr) {
-        if (!isNaN(parseInt(char))) {
-            ascii.push(char)
-        } else {
-            ascii.push(char.charCodeAt(0));
-        }
-    }
+    // Map through array and convert al non numeric chars to ASCII
+    let ascii = arr.map(item => {
+        return isNaN(parseInt(item)) ? item.charCodeAt(0) : item;
+    });
 
     // Split numbers
-    let splitAscii = [];
-    for (let num of ascii) {
-        const nums = num.toString().split("");
-        for (let n of nums) {
-            splitAscii.push(parseInt(n))
-        }
-    }
+    let splitAscii = ascii.map(num => {
+        return num.toString().split("");
+    }).reduce((col, nums) => (col.push(...nums), col), []);
 
-    // Add till mod of 10
+    // Add till length is mod of 10
     let left = 10 - (splitAscii.length % 10);
     for (let i = 0; i < left; i++) {
         splitAscii.push(i)
     }
 
-    // Make mod 10 arrays
+    // Make group10 arrays
     let multipleArrays = [];
     for (let i = 0; i < splitAscii.length; i += 10) {
         multipleArrays.push(splitAscii.slice(i, i + 10))
     }
 
-    let finalArray = mod10(multipleArrays, ...multipleArrays.splice(0, 1));
+    let finalArray = mod10hash(multipleArrays, ...multipleArrays.splice(0, 1));
 
     // Create string && hash that string
     const nonHashString = finalArray.toString().replace(/,/g, '');
@@ -103,16 +92,24 @@ function hashFunc(string) {
 }
 
 function doHash(string) {
+    // let number = '123456';
+    // let nonce = 'prnt.sc/' + number;
     let nonce = 0;
     let hashed = hashFunc(string + nonce);
 
     while (hashed.substr(0, 4) !== '0000') {
-        nonce++
+        // number = generateRandomString(6);
+        // nonce = 'prnt.sc/' + number;
+        nonce++;
         hashed = hashFunc(string + nonce);
     }
+    workingSpinner.stop(true);
+    console.log('Hash accepted: ', hashed)
+    console.log('Nonce accepted: ', nonce)
+    goIdle();
     axios.post('https://programmeren9.cmgt.hr.nl:8000/api/blockchain', {
         nonce: nonce,
-        user: '0944552'
+        user: 'To whom it may concern. I broke the system. #K'
     }).then(res => {
         workingSpinner.stop(true);
         if (res.data.message === 'blockchain accepted, user awarded') {
@@ -138,22 +135,6 @@ function goIdle() {
     })
 }
 
-function mod10(collection, summary) {
-    if (collection.length === 0) {
-        return summary
-    }
-    return mod10(collection, addition(summary, ...collection.splice(0, 1)))
-}
-
-function addition(arr1, arr2) {
-    let arr = [];
-
-    for (let i = 0; i < 10; i++) {
-        arr.push((arr1[i] + arr2[i]) % 10)
-    }
-    return arr;
-}
-
 function countMyRecords() {
     let recordCount = 0;
 
@@ -161,7 +142,7 @@ function countMyRecords() {
         for (let item of res.data) {
             for (let transaction of item.data) {
 
-                if (transaction.to === '0944552') {
+                if (transaction.to === '0944552' || transaction.to === 'Kevin') {
                     recordCount++
                 }
             }
@@ -171,7 +152,23 @@ function countMyRecords() {
 
 }
 
-// start();
+start();
+// countMyRecords();
+
+function generateRandomString(length) {
+
+    var text = "";
+
+    var possible = "123456789abcdefghijklmnopqrstuvwxyz";
 
 
-countMyRecords();
+
+    for (var i = 0; i < length; i++)
+
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+
+
+    return text;
+
+}
