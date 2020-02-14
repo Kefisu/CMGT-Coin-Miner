@@ -104,33 +104,29 @@ function doHash(string) {
         hashed = hashFunc(string + nonce);
     }
     workingSpinner.stop(true);
-    console.log('Hash accepted: ', hashed)
-    console.log('Nonce accepted: ', nonce)
-    goIdle();
+    console.log('Hash found: ', hashed)
+    console.log('Nonce found: ', nonce)
     axios.post('https://programmeren9.cmgt.hr.nl:8000/api/blockchain', {
         nonce: nonce,
         user: 'To whom it may concern. I broke the system. #K'
     }).then(res => {
         workingSpinner.stop(true);
         if (res.data.message === 'blockchain accepted, user awarded') {
-            console.log('Acccepted hash: ', hashed);
             console.log('Status: ', res.data.message);
-            console.log('Accepted nonce', nonce);
-
-            goIdle();
+            goIdle('after succesfull mining session');
         } else if (res.data.message = 'nonce not correct') {
             console.log(chalk.red(res.data.message))
-            goIdle();
+            goIdle('due to incorrect nonce');
         } else {
             console.log(chalk.red(res.data.message))
-            mine()
+            goIdle('due to unknown status');
         }
     })
 }
 
-function goIdle() {
+function goIdle(msg = '') {
     axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next').then(res => {
-        console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
+        console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms ${msg}`))
         setTimeout(() => mine(), res.data.countdown)
     })
 }
@@ -153,6 +149,7 @@ function countMyRecords() {
 }
 
 start();
+
 // countMyRecords();
 
 function generateRandomString(length) {
@@ -162,11 +159,9 @@ function generateRandomString(length) {
     var possible = "123456789abcdefghijklmnopqrstuvwxyz";
 
 
-
     for (var i = 0; i < length; i++)
 
         text += possible.charAt(Math.floor(Math.random() * possible.length));
-
 
 
     return text;
