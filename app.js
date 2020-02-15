@@ -11,7 +11,6 @@ const hash = require('./modules/hash.js');
 
 let fetchSpinner = new spinner('%s Blok ophalen');
 let workingSpinner = new spinner('%s Bezig met minen');
-let sessionBlocksMined = 0;
 
 const start = async () => {
     console.clear();
@@ -75,13 +74,9 @@ function hashFunc(string) {
     }
 
     // Split numbers
-    let splitAscii = [];
-    for (let num of ascii) {
-        const nums = num.toString().split("");
-        for (let n of nums) {
-            splitAscii.push(parseInt(n))
-        }
-    }
+    let splitAscii = ascii.map(num => {
+        return num.toString().split("");
+    }).reduce((col, nums) => (col.push(...nums), col), []);
 
     // Add till mod of 10
     let left = 10 - (splitAscii.length % 10);
@@ -103,6 +98,7 @@ function hashFunc(string) {
 }
 
 function doHash(string) {
+    let t0 = new Date().getTime();
     let nonce = 0;
     let hashed = hashFunc(string + nonce);
 
@@ -110,11 +106,16 @@ function doHash(string) {
         nonce++
         hashed = hashFunc(string + nonce);
     }
+
+    let t1 = new Date().getTime();
+
+    workingSpinner.stop(true);
+    console.log(`Mining ended after: ${t1 - t0}ms`);
+
     axios.post('https://programmeren9.cmgt.hr.nl:8000/api/blockchain', {
         nonce: nonce,
         user: '0944552'
     }).then(res => {
-        workingSpinner.stop(true);
         if (res.data.message === 'blockchain accepted, user awarded') {
             console.log('Acccepted hash: ', hashed);
             console.log('Status: ', res.data.message);
@@ -149,7 +150,7 @@ function addition(arr1, arr2) {
     let arr = [];
 
     for (let i = 0; i < 10; i++) {
-        arr.push((arr1[i] + arr2[i]) % 10)
+        arr.push((parseInt(arr1[i]) + parseInt(arr2[i])) % 10)
     }
     return arr;
 }
@@ -158,20 +159,26 @@ function countMyRecords() {
     let recordCount = 0;
 
     axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain').then(res => {
+        let t0 = new Date().getTime();
         for (let item of res.data) {
             for (let transaction of item.data) {
-
-                if (transaction.to === '0944552') {
+                if (transaction.to === '0944552' || transaction.to === 'Kevin') {
                     recordCount++
                 }
             }
+            if (item.nonce.includes('prnt.sc')) {
+                recordCount++;
+            }
         }
+        let t1 = new Date().getTime();
+
+        console.log(`Function ran in: ${t1 - t0}ms`);
+
         console.log(chalk.cyan(`You have ${recordCount} CMGT Coins.`))
     })
 
 }
 
-// start();
+start();
 
-
-countMyRecords();
+// countMyRecords();

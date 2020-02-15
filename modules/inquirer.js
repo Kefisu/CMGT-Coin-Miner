@@ -6,7 +6,7 @@ module.exports = {
             {
                 name: 'start',
                 type: 'confirm',
-                message: 'Wilt u de miner starten?'
+                message: 'Do you want to start the miner?'
             }
         ]
         return inquirer.prompt(question);
