@@ -1,6 +1,13 @@
 module.exports = {
     createLastBlockString: (obj) => {
-        return obj.blockchain.hash + obj.blockchain.data[0].from + obj.blockchain.data[0].to + obj.blockchain.data[0].amount + obj.blockchain.data[0].timestamp + obj.blockchain.timestamp + obj.blockchain.nonce;
+
+        let block = '';
+
+        for (let blok of obj.blockchain.data) {
+            block += blok.from + blok.to + blok.amount + blok.timestamp
+        }
+
+        return obj.blockchain.hash + block + obj.blockchain.timestamp + obj.blockchain.nonce;
     },
     createNewBlockString: (string, obj) => {
         let transactionString = '';
