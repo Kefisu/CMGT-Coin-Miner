@@ -3,10 +3,9 @@ const chalk = require('chalk');
 const spinner = require('cli-spinner').Spinner;
 
 const axios = require('axios');
-const crypto = require('crypto');
 
 const inquirer = require('./modules/inquirer');
-const helpers = require('./modules/helpers');
+// const helpers = require('./modules/helpers');
 const hash = require('./modules/hash.js');
 
 let fetchSpinner = new spinner('%s Blok ophalen');
@@ -43,7 +42,7 @@ function mine() {
             if (res.data.open) {
                 workingSpinner.start();
 
-                let string = hashFunc(hash.createLastBlockString(res.data));
+                let string = hash.execute(hash.createLastBlockString(res.data));
                 let newString = hash.createNewBlockString(string, res.data);
 
                 doHash(newString)
@@ -55,56 +54,14 @@ function mine() {
         .catch(err => console.error(err));
 }
 
-function hashFunc(string) {
-
-    // Replace spaces
-    let arr = helpers.stringToArray(helpers.replaceWhitespaces(string));
-
-    // Convert string to chars in array
-    // let arr = s.split("");
-
-    // Convert chars to ascii
-    let ascii = [];
-    for (let char of arr) {
-        if (!isNaN(parseInt(char))) {
-            ascii.push(char)
-        } else {
-            ascii.push(char.charCodeAt(0));
-        }
-    }
-
-    // Split numbers
-    let splitAscii = ascii.map(num => {
-        return num.toString().split("");
-    }).reduce((col, nums) => (col.push(...nums), col), []);
-
-    // Add till mod of 10
-    let left = 10 - (splitAscii.length % 10);
-    for (let i = 0; i < left; i++) {
-        splitAscii.push(i)
-    }
-
-    // Make mod 10 arrays
-    let multipleArrays = [];
-    for (let i = 0; i < splitAscii.length; i += 10) {
-        multipleArrays.push(splitAscii.slice(i, i + 10))
-    }
-
-    let finalArray = mod10(multipleArrays, ...multipleArrays.splice(0, 1));
-
-    // Create string && hash that string
-    const nonHashString = finalArray.toString().replace(/,/g, '');
-    return crypto.createHash('sha256').update(nonHashString).digest('hex');
-}
-
 function doHash(string) {
     let t0 = new Date().getTime();
     let nonce = 0;
-    let hashed = hashFunc(string + nonce);
+    let hashed = hash.execute(string + nonce);
 
     while (hashed.substr(0, 4) !== '0000') {
         nonce++
-        hashed = hashFunc(string + nonce);
+        hashed = hash.execute(string + nonce);
     }
 
     let t1 = new Date().getTime();
