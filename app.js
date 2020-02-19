@@ -1,33 +1,32 @@
 const figlet = require('figlet');
 const chalk = require('chalk');
 const spinner = require('cli-spinner').Spinner;
-
 const axios = require('axios');
 
 const inquirer = require('./modules/inquirer');
+
 // const helpers = require('./modules/helpers');
 const hash = require('./modules/hash.js');
+const randomString = require('./modules/helpers/randomString');
 
 let fetchSpinner = new spinner('%s Blok ophalen');
 let workingSpinner = new spinner('%s Bezig met minen');
 
+let mode = null;
+
 const start = async () => {
     console.clear();
-    console.log(
-        chalk.red(
-            figlet.textSync('CMGT Coin Miner v0.1', {
-                horizontalLayout: 'full'
-            })
-        )
-    );
-
-    // await countMyRecords();
-
+    console.log(chalk.red(figlet.textSync('CMGT Coin Miner v0.1', {horizontalLayout: 'full'})));
     const command = await inquirer.askToStartMiner();
 
     if (command.start) {
-        console.log(chalk.green('Starting CMGT Coin Miner'));
-        mine();
+        mode = await inquirer.askForMiningMode();
+
+        if (mode) {
+            console.log(chalk.green('Starting CMGT Coin Miner'));
+            console.log('Hashing with nonce mode:', mode);
+            mine();
+        }
     }
 }
 
@@ -47,24 +46,42 @@ function mine() {
 
                 doHash(newString)
             } else {
-                console.log(chalk.yellow(`Block locked. Going idle for ${res.data.countdown}ms`));
-                setTimeout(() => mine(), res.data.countdown)
+                console.log(chalk.yellow(`Block locked. Time until opening: ${res.data.countdown}ms`));
+                setTimeout(() => mine(), res.data.countdown / 10)
             }
         })
         .catch(err => console.error(err));
 }
 
 function doHash(string) {
-    let t0 = new Date().getTime();
+    const t0 = new Date().getTime();
     let nonce = 0;
+    let number = 0;
+    switch (mode) {
+        case 'number':
+            nonce = 0;
+            break;
+        case 'prnt.sc':
+            number = '123456';
+            nonce = 'prnt.sc/' + number;
+            break;
+    }
     let hashed = hash.execute(string + nonce);
 
     while (hashed.substr(0, 4) !== '0000') {
-        nonce++
+        switch (mode) {
+            case 'number':
+                nonce++;
+                break;
+            case 'prnt.sc':
+                number = randomString(6);
+                nonce = 'prnt.sc/' + number;
+                break;
+        }
         hashed = hash.execute(string + nonce);
     }
 
-    let t1 = new Date().getTime();
+    const t1 = new Date().getTime();
 
     workingSpinner.stop(true);
     console.log(`Mining ended after: ${t1 - t0}ms`);
@@ -96,46 +113,4 @@ function goIdle() {
     })
 }
 
-function mod10(collection, summary) {
-    if (collection.length === 0) {
-        return summary
-    }
-    return mod10(collection, addition(summary, ...collection.splice(0, 1)))
-}
-
-function addition(arr1, arr2) {
-    let arr = [];
-
-    for (let i = 0; i < 10; i++) {
-        arr.push((parseInt(arr1[i]) + parseInt(arr2[i])) % 10)
-    }
-    return arr;
-}
-
-function countMyRecords() {
-    let recordCount = 0;
-
-    axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain').then(res => {
-        let t0 = new Date().getTime();
-        for (let item of res.data) {
-            for (let transaction of item.data) {
-                if (transaction.to === '0944552' || transaction.to === 'Kevin') {
-                    recordCount++
-                }
-            }
-            if (item.nonce.includes('prnt.sc')) {
-                recordCount++;
-            }
-        }
-        let t1 = new Date().getTime();
-
-        console.log(`Function ran in: ${t1 - t0}ms`);
-
-        console.log(chalk.cyan(`You have ${recordCount} CMGT Coins.`))
-    })
-
-}
-
 start();
-
-// countMyRecords();
