@@ -1,6 +1,6 @@
 const figlet = require('figlet');
 const chalk = require('chalk');
-const spinner = require('cli-spinner').Spinner;
+// const spinner = require('cli-spinner').Spinner;
 const axios = require('axios');
 const {performance} = require('perf_hooks')
 
@@ -10,48 +10,48 @@ const inquirer = require('./modules/inquirer');
 const hash = require('./modules/hash.js');
 const randomString = require('./modules/helpers/randomString');
 
-let fetchSpinner = new spinner('%s Blok ophalen');
-let workingSpinner = new spinner('%s Bezig met minen');
+// let fetchSpinner = new spinner('%s Blok ophalen');
+// let workingSpinner = new spinner('%s Bezig met minen');
 
 let mode = null;
 
 const start = async () => {
-    console.clear();
-    console.log(chalk.red(figlet.textSync('CMGT Coin Miner v0.1', {horizontalLayout: 'full'})));
+    // console.clear();
+    // console.log(chalk.red(figlet.textSync('CMGT Coin Miner v0.1', {horizontalLayout: 'full'})));
     const command = await inquirer.askToStartMiner();
 
     if (command.start) {
         mode = await inquirer.askForMiningMode();
 
         if (mode) {
-            console.log(chalk.green('Starting CMGT Coin Miner'));
-            console.log('Hashing with nonce mode:', mode);
+            // console.log(chalk.green('Starting CMGT Coin Miner'));
+            // console.log('Hashing with nonce mode:', mode);
             mine();
         }
     }
 }
 
 function mine() {
-    fetchSpinner.start();
+    // fetchSpinner.start();
 
     axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next')
         .then(res => {
 
-            fetchSpinner.stop(true);
+            // fetchSpinner.stop(true);
 
             if (res.data.open) {
-                workingSpinner.start();
+                // workingSpinner.start();
 
                 let string = hash.execute(hash.createLastBlockString(res.data));
                 let newString = hash.createNewBlockString(string, res.data);
 
                 doHash(newString)
             } else {
-                console.log(chalk.yellow(`Block locked. Time until opening: ${res.data.countdown}ms`));
+                // console.log(chalk.yellow(`Block locked. Time until opening: ${res.data.countdown}ms`));
                 setTimeout(() => mine(), res.data.countdown)
             }
         })
-        .catch(err => console.error(err));
+        // .catch(err => console.error(err));
 }
 
 function doHash(string) {
@@ -82,8 +82,8 @@ function doHash(string) {
 
     const t1 = performance.now()
 
-    workingSpinner.stop(true);
-    console.log(`Mining ended after: ${(t1 - t0) / 1000}s`);
+    // workingSpinner.stop(true);
+    // console.log(`Mining ended after: ${(t1 - t0) / 1000}s`);
 
     axios.post('https://programmeren9.cmgt.hr.nl:8000/api/blockchain', {
         nonce: nonce,
@@ -112,7 +112,7 @@ function doHash(string) {
 
 function goIdle() {
     axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next').then(res => {
-        console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
+        // console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
         setTimeout(() => mine(), res.data.countdown)
     })
 }
