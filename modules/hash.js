@@ -20,36 +20,14 @@ module.exports = {
         return string + transactionString + obj.timestamp;
     },
     execute: (string) => {
-        // Replace spaces
-        let arr = helpers.stringToArray(helpers.replaceWhitespaces(string));
-
-        // Convert chars to ascii
-        let ascii = [];
-        arr.map(char => {
-            !isNaN(parseInt(char)) ? ascii.push(char) : ascii.push(char.charCodeAt(0))
-        });
-
-        // Split numbers
-        let splitAscii = ascii.map(num => {
-            return num.toString().split("");
-        }).reduce((col, nums) => (col.push(...nums), col), []);
-
-        // Add till mod of 10
-        // let left = 10 - (splitAscii.length % 10);
-        // for (let i = 0; i < left; i++) {
-        //     splitAscii.push(i)
-        // }
+        let splitAscii = helpers.splitNumbers(helpers.toAscii(helpers.stringToArray(helpers.replaceWhitespaces(string))));
         splitAscii.push(...fillables.slice(0, (10 - (splitAscii.length % 10))));
-
-
         // Make mod 10 arrays
         let multipleArrays = [];
         for (let i = 0; i < splitAscii.length; i += 10) {
             multipleArrays.push(splitAscii.slice(i, i + 10))
         }
-
         let finalArray = mod10hash(multipleArrays, ...multipleArrays.splice(0, 1));
-
         // Create string && hash that string
         const nonHashString = finalArray.toString().replace(/,/g, '');
         return crypto.createHash('sha256').update(nonHashString).digest('hex');

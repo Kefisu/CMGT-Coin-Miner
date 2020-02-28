@@ -21,7 +21,8 @@ module.exports = {
                     'number',
                     'prnt.sc',
                     // 'string',
-                    // 'words'
+                    'words',
+                    'coins'
                 ]
             }
         ];

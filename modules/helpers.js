@@ -25,5 +25,15 @@ module.exports = {
         for (let i = 0; i < length; i++)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
+    },
+    splitNumbers: (arr) => {
+        return arr.map(num => {
+            return num.toString().split("");
+        }).reduce((col, nums) => (col.push(...nums), col), []);
+    },
+    toAscii: (arr) => {
+        return arr.map(char => {
+            return !isNaN(parseInt(char)) ? char : char.charCodeAt(0)
+        });
     }
 };
