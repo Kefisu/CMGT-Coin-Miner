@@ -23,13 +23,21 @@ module.exports = {
         let splitAscii = helpers.splitNumbers(helpers.toAscii(helpers.stringToArray(helpers.replaceWhitespaces(string))));
         splitAscii.push(...fillables.slice(0, (10 - (splitAscii.length % 10))));
         // Make mod 10 arrays
-        let multipleArrays = [];
-        for (let i = 0; i < splitAscii.length; i += 10) {
-            multipleArrays.push(splitAscii.slice(i, i + 10))
-        }
+        let multipleArrays = SplitArrays([splitAscii.splice(0,10)], splitAscii);
+        // for (let i = 0; i < splitAscii.length; i += 10) {
+        //     multipleArrays.push(splitAscii.slice(i, i + 10))
+        // }
         let finalArray = mod10hash(multipleArrays, ...multipleArrays.splice(0, 1));
         // Create string && hash that string
         const nonHashString = finalArray.toString().replace(/,/g, '');
         return crypto.createHash('sha256').update(nonHashString).digest('hex');
     },
+}
+
+function SplitArrays(n, o) {
+    if (o.length === 0) {
+        return n;
+    }
+    n.push(o.splice(0,10));
+    return SplitArrays(n, o)
 }
