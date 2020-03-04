@@ -27,7 +27,7 @@ function getRandomInt(min, max) {
 
 const start = async () => {
     console.clear();
-    console.log(chalk.red(figlet.textSync('CMGT Coin Miner v0.1', {horizontalLayout: 'full'})));
+    console.log(chalk.red(figlet.textSync('CMGT Coin Miner v1.0', {horizontalLayout: 'full'})));
     const command = await inquirer.askToStartMiner();
 
     if (command.start) {
@@ -64,7 +64,7 @@ const nonceMode = (nonce = 0) => {
             break;
         case 'prnt.sc':
             number = randomString(6);
-            nonce = 'prnt.sc/' + number;
+            nonce = 'https://prnt.sc/' + number;
             break;
         case 'coins':
             number = randomString(6);
@@ -74,7 +74,6 @@ const nonceMode = (nonce = 0) => {
             nonce = generateName()
             break;
     }
-    console.log('Nonce:', nonce)
     return nonce;
 }
 
@@ -87,7 +86,7 @@ const postNonce = (s, n) => {
         if (res.data.message === 'blockchain accepted, user awarded') {
             console.log('Acccepted hash: ', s);
             console.log('Status: ', res.data.message);
-            console.log('Accepted nonce', s);
+            console.log('Accepted nonce', n);
 
             goIdle();
         } else if (res.data.message === 'nonce not correct') {
@@ -107,7 +106,7 @@ const postNonce = (s, n) => {
 
 const goIdle = () => {
     axios.get('https://programmeren9.cmgt.hr.nl:8000/api/blockchain/next').then(res => {
-        // console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
+        console.log(chalk.yellow(`Going idle for ${res.data.countdown}ms`))
         setTimeout(() => startMine(), res.data.countdown)
     })
 }
@@ -119,7 +118,7 @@ const miner = (s, i = 0) => {
         postNonce(hashed, nonce)
     } else {
         if (i % 2500 === 0) {
-            // Make sure node call stack size doesn't exceed
+            // Make sure node call stack size doesn't exceed, Thanks Justin
             process.nextTick(() => miner(s, i), 0)
         } else {
             miner(s, i)
